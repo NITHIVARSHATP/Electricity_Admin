@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 import 'package:complaint_system/models/complaint_model.dart';
 import 'package:complaint_system/screens/login_screen.dart';
@@ -18,15 +20,26 @@ class OfficialDashboardScreen extends StatefulWidget {
 }
 
 class _OfficialDashboardScreenState extends State<OfficialDashboardScreen> {
-  // Helper to get status colors
-  Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'pending':
+  static const primaryPurple = Color(0xFF5B2D91);
+  static const bgColor = Color(0xFFF6F7FB);
+
+  // ================= PRIORITY COLOR =================
+  Color _priorityColor(String value) {
+    switch (value.toLowerCase()) {
+      case 'high':
+        return Colors.red;
+      case 'medium':
         return Colors.orange;
-      case 'in progress':
-        return Colors.blue;
+      case 'low':
+        return Colors.green;
+      case 'classified':
+        return Colors.deepOrange;
       case 'resolved':
         return Colors.green;
+      case 'in progress':
+        return Colors.blue;
+      case 'pending':
+        return Colors.orange;
       default:
         return Colors.grey;
     }
@@ -34,124 +47,45 @@ class _OfficialDashboardScreenState extends State<OfficialDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final User? currentUser = FirebaseAuth.instance.currentUser;
+    final user = FirebaseAuth.instance.currentUser;
 
-    if (currentUser == null) {
+    if (user == null) {
       return const Scaffold(
         body: Center(child: Text("Session expired. Please login again.")),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: bgColor,
 
-      // 🔹 APP BAR
+      // ================= APP BAR =================
       appBar: AppBar(
-        title: const Text(
-          'Assigned Complaints',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: const Color(0xFF5B2D91),
+        backgroundColor: primaryPurple,
         foregroundColor: Colors.white,
+        elevation: 0,
+        title: const Text(""), // keep empty (header replaces title)
         actions: [
-          // 🏆 Leaderboard Shortcut
           IconButton(
             icon: const Icon(Icons.leaderboard),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
-              );
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const LeaderboardScreen()));
             },
           ),
-
-          // ⋮ THREE DOT MENU
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              switch (value) {
-                case 'analytics':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AnalyticsDashboardScreen()),
-                  );
-                  break;
-                case 'profile':
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                  );
-                  break;
-                case 'find':
-                  showSearch(
-                    context: context,
-                    delegate: OfficialComplaintSearchDelegate(currentUser.email!),
-                  );
-                  break;
-                case 'help':
-                  showDialog(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text("Help"),
-                      content: const Text(
-                        "For assistance, please contact the system administrator.",
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text("OK"),
-                        ),
-                      ],
-                    ),
-                  );
-                  break;
-              }
+          IconButton(
+            icon: const Icon(Icons.analytics),
+            onPressed: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const AnalyticsDashboardScreen()));
             },
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: 'analytics',
-                child: Row(
-                  children: [
-                    Icon(Icons.analytics, size: 20, color: Colors.black87),
-                    SizedBox(width: 10),
-                    Text("Analytics"),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'profile',
-                child: Row(
-                  children: [
-                    Icon(Icons.person, size: 20, color: Colors.black87),
-                    SizedBox(width: 10),
-                    Text("My Profile"),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'find',
-                child: Row(
-                  children: [
-                    Icon(Icons.search, size: 20, color: Colors.black87),
-                    SizedBox(width: 10),
-                    Text("Find Complaint"),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'help',
-                child: Row(
-                  children: [
-                    Icon(Icons.help_outline, size: 20, color: Colors.black87),
-                    SizedBox(width: 10),
-                    Text("Help"),
-                  ],
-                ),
-              ),
-            ],
           ),
-
-          // 🚪 LOGOUT
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const ProfileScreen()));
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -166,170 +100,199 @@ class _OfficialDashboardScreenState extends State<OfficialDashboardScreen> {
         ],
       ),
 
-      // 🔹 BODY
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('complaints')
-            .where('assignedTo', isEqualTo: currentUser.email)
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No complaints assigned"));
-          }
-
-          final docs = snapshot.data!.docs;
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final doc = docs[index];
-              final complaint = Complaint.fromWorkerFirestore(
-                doc.data() as Map<String, dynamic>,
-                doc.id,
-              );
-
-              return InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => JobDetailScreen(task: complaint),
-                    ),
-                  );
-                },
-                child: Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  margin: const EdgeInsets.only(bottom: 14),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          complaint.title,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Chip(
-                              label: Text(
-                                complaint.category,
-                                style: const TextStyle(color: Colors.white, fontSize: 12),
-                              ),
-                              backgroundColor: const Color(0xFF0D47A1),
-                            ),
-                            Chip(
-                              label: Text(
-                                complaint.status,
-                                style: const TextStyle(color: Colors.white, fontSize: 12),
-                              ),
-                              backgroundColor: _statusColor(complaint.status),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          );
-        },
+      // ================= BODY =================
+      body: Column(
+        children: [
+          _officerHeader(user),
+          Expanded(child: _complaintList(user.email!)),
+        ],
       ),
     );
   }
-}
 
-//////////////////////////////////////////////////////////////////////////////
-// 🔍 SEARCH DELEGATE
-//////////////////////////////////////////////////////////////////////////////
+  // ================= HEADER =================
+  Widget _officerHeader(User user) {
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('Users').doc(user.uid).get(),
+      builder: (context, snapshot) {
+        String? photoUrl;
+        if (snapshot.hasData && snapshot.data!.exists) {
+          photoUrl = snapshot.data!['url'];
+        }
 
-class OfficialComplaintSearchDelegate extends SearchDelegate {
-  final String officialEmail;
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 28),
+          decoration: const BoxDecoration(
+            color: primaryPurple,
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: Colors.white,
+                backgroundImage:
+                photoUrl != null && photoUrl.isNotEmpty
+                    ? NetworkImage(photoUrl)
+                    : null,
+                child: photoUrl == null
+                    ? const Icon(Icons.person, size: 32, color: primaryPurple)
+                    : null,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text("Welcome",
+                        style: TextStyle(color: Colors.white70)),
+                    const SizedBox(height: 2),
+                    Text(
+                      user.email ?? "",
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      "Manage assigned civic complaints",
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
-  OfficialComplaintSearchDelegate(this.officialEmail);
-
-  @override
-  List<Widget>? buildActions(BuildContext context) => [
-    IconButton(
-      icon: const Icon(Icons.clear),
-      onPressed: () => query = '',
-    ),
-  ];
-
-  @override
-  Widget? buildLeading(BuildContext context) => IconButton(
-    icon: const Icon(Icons.arrow_back),
-    onPressed: () => close(context, null),
-  );
-
-  @override
-  Widget buildResults(BuildContext context) => _buildResults();
-
-  @override
-  Widget buildSuggestions(BuildContext context) => _buildResults();
-
-  Widget _buildResults() {
+  // ================= LIST =================
+  Widget _complaintList(String email) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('complaints')
-          .where('assignedTo', isEqualTo: officialEmail)
+          .where('assignedTo', isEqualTo: email)
+          .orderBy('createdAt', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final results = snapshot.data!.docs
-            .map((doc) => Complaint.fromWorkerFirestore(
-          doc.data() as Map<String, dynamic>,
-          doc.id,
-        ))
-            .where((c) =>
-        c.title.toLowerCase().contains(query.toLowerCase()) ||
-            c.category.toLowerCase().contains(query.toLowerCase()))
-            .toList();
-
-        if (results.isEmpty) {
-          return const Center(child: Text("No matching complaints"));
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const Center(child: Text("No complaints assigned"));
         }
 
+        final docs = snapshot.data!.docs;
+
         return ListView.builder(
-          itemCount: results.length,
+          padding: const EdgeInsets.fromLTRB(12, 16, 12, 80),
+          itemCount: docs.length,
           itemBuilder: (context, index) {
-            final c = results[index];
-            return ListTile(
-              title: Text(c.title),
-              subtitle: Text(c.category),
-              trailing: Text(c.status),
+            final complaint = Complaint.fromWorkerFirestore(
+              docs[index].data() as Map<String, dynamic>,
+              docs[index].id,
+            );
+
+            final badgeColor =
+            _priorityColor(complaint.priority ?? complaint.status);
+
+            return InkWell(
+              borderRadius: BorderRadius.circular(18),
               onTap: () {
-                close(context, null);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => JobDetailScreen(task: c),
+                    builder: (_) => JobDetailScreen(task: complaint),
                   ),
                 );
               },
+
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1EEF3),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            complaint.title,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF0D47A1),
+                            ),
+                          ),
+                        ),
+                        Text(
+                          DateFormat('MMM d, yyyy').format(complaint.date),
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            "ID: ${complaint.complaintId}",
+                            style: const TextStyle(color: Colors.blueGrey),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.copy, size: 18),
+                          onPressed: () {
+                            Clipboard.setData(
+                                ClipboardData(text: complaint.complaintId));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Complaint ID copied")),
+                            );
+                          },
+                        )
+                      ],
+                    ),
+
+                    Text(
+                      complaint.description,
+                      style: const TextStyle(fontSize: 15),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: badgeColor),
+                        color: badgeColor.withValues(alpha: 0.08),
+                      ),
+                      child: Text(
+                        complaint.priority ?? complaint.status,
+                        style: TextStyle(
+                          color: badgeColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             );
           },
         );

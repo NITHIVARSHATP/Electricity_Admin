@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:complaint_system/models/Application.dart' as Application;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
