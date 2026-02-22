@@ -13,7 +13,6 @@ class ComplaintService {
 
   Stream<List<ComplaintModel>> streamActiveComplaints() {
     const activeStatuses = {
-      'submitted',
       'classified',
       'under_review',
       'in_progress',
@@ -131,7 +130,11 @@ class ComplaintService {
       actionLabel: 'Reopen Complaint',
     );
     return _complaints.doc(complaintId).update({
-      'status': 'reopened',
+      'status': 'classified',
+      'assignedTo': 'Unassigned',
+      'assignedRole': 'Pending',
+      'resolutionNote': 'Not Added',
+      'proofImage': 'placeholder_image_url',
     });
   }
 

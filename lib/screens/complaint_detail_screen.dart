@@ -473,10 +473,13 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
   }
 
   Future<void> _reopenComplaint(String complaintId) async {
+    final confirmed = await _confirmReopen();
+    if (!confirmed) return;
+
     setState(() => _loading = true);
     try {
       await widget.complaintService.reopenComplaint(complaintId);
-      _showMessage('Complaint reopened and moved back to AE workflow.');
+      _showMessage('Complaint reopened and reset to classified.');
     } catch (error) {
       _showMessage('Failed to reopen complaint: $error');
     } finally {
@@ -534,6 +537,32 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
     return result ?? false;
   }
 
+  Future<bool> _confirmReopen() async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Reopen Complaint?'),
+          content: const Text(
+            'This will restart workflow from classified and clear assigned field staff and resolution details. Continue?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Reopen'),
+            ),
+          ],
+        );
+      },
+    );
+
+    return result ?? false;
+  }
+
   Future<void> _showAssignmentRequiredAlert() async {
     if (!mounted) return;
     await showDialog<void>(
@@ -542,7 +571,7 @@ class _ComplaintDetailScreenState extends State<ComplaintDetailScreen> {
         return AlertDialog(
           title: const Text('Assignment Required'),
           content: const Text(
-            'Please assign the field officer first before marking this complaint as In Progress.',
+            'Please assign field staff before marking In Progress.',
           ),
           actions: [
             TextButton(
