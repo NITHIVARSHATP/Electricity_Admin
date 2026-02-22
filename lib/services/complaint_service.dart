@@ -12,14 +12,23 @@ class ComplaintService {
       _firestore.collection('complaints');
 
   Stream<List<ComplaintModel>> streamActiveComplaints() {
-    const activeStatuses = ['Submitted', 'Under Review', 'Reopened'];
+    const activeStatuses = {
+      'submitted',
+      'classified',
+      'under_review',
+      'in_progress',
+      'resolved',
+      'reopened',
+    };
 
     return _complaints
         .snapshots()
         .map((snapshot) {
       final complaints = snapshot.docs
           .map(ComplaintModel.fromFirestore)
-          .where((item) => activeStatuses.contains(item.status))
+          .where(
+            (item) => activeStatuses.contains(_normalizeStatus(item.status)),
+          )
           .toList(growable: false);
 
       final sorted = complaints.toList(growable: false)
@@ -37,6 +46,14 @@ class ComplaintService {
     });
   }
 
+  String _normalizeStatus(String value) {
+    return value
+        .trim()
+        .toLowerCase()
+        .replaceAll('-', '_')
+        .replaceAll(' ', '_');
+  }
+
   Stream<ComplaintModel?> streamComplaintById(String complaintId) {
     return _complaints.doc(complaintId).snapshots().map((doc) {
       if (!doc.exists) return null;
@@ -45,16 +62,27 @@ class ComplaintService {
   }
 
   Future<void> markUnderReview(String complaintId) async {
+    await _ensureAllowedCurrentStatus(
+      complaintId,
+      allowed: {'classified', 'reopened'},
+      actionLabel: 'Mark Under Review',
+    );
     await _ensureModuleDefaults(complaintId);
     return _complaints.doc(complaintId).update({
-      'status': 'Under Review',
+      'status': 'under_review',
     });
   }
 
   Future<void> markInProgress(String complaintId) async {
+    await _ensureAllowedCurrentStatus(
+      complaintId,
+      allowed: {'under_review'},
+      actionLabel: 'Mark In Progress',
+    );
+    await _ensureFieldStaffAssigned(complaintId);
     await _ensureModuleDefaults(complaintId);
     return _complaints.doc(complaintId).update({
-      'status': 'In Progress',
+      'status': 'in_progress',
     });
   }
 
@@ -63,9 +91,14 @@ class ComplaintService {
     required String assignedTo,
     required String assignedRole,
   }) async {
+    await _ensureAllowedCurrentStatus(
+      complaintId,
+      allowed: {'classified', 'under_review'},
+      actionLabel: 'Assign Field Staff',
+    );
     await _ensureModuleDefaults(complaintId);
     return _complaints.doc(complaintId).update({
-      'assignedTo': assignedTo.trim().isEmpty ? 'Pending' : assignedTo.trim(),
+      'assignedTo': assignedTo.trim().isEmpty ? 'Unassigned' : assignedTo.trim(),
       'assignedRole': assignedRole.trim().isEmpty ? 'Pending' : assignedRole,
     });
   }
@@ -75,15 +108,72 @@ class ComplaintService {
     required String resolutionNote,
     required String proofImage,
   }) async {
+    await _ensureAllowedCurrentStatus(
+      complaintId,
+      allowed: {'in_progress'},
+      actionLabel: 'Resolution Entry',
+    );
     await _ensureModuleDefaults(complaintId);
     return _complaints.doc(complaintId).update({
-      'status': 'Resolved',
+      'status': 'resolved',
       'resolutionNote':
           resolutionNote.trim().isEmpty ? 'Not Added' : resolutionNote.trim(),
       'proofImage': proofImage.trim().isEmpty
           ? 'placeholder_image_url'
           : proofImage.trim(),
     });
+  }
+
+  Future<void> reopenComplaint(String complaintId) async {
+    await _ensureAllowedCurrentStatus(
+      complaintId,
+      allowed: {'resolved'},
+      actionLabel: 'Reopen Complaint',
+    );
+    return _complaints.doc(complaintId).update({
+      'status': 'reopened',
+    });
+  }
+
+  Future<void> deleteComplaint(String complaintId) async {
+    await _ensureAllowedCurrentStatus(
+      complaintId,
+      allowed: {'resolved'},
+      actionLabel: 'Delete Complaint',
+    );
+    return _complaints.doc(complaintId).delete();
+  }
+
+  Future<void> _ensureAllowedCurrentStatus(
+    String complaintId, {
+    required Set<String> allowed,
+    required String actionLabel,
+  }) async {
+    final snapshot = await _complaints.doc(complaintId).get();
+    if (!snapshot.exists) return;
+
+    final data = snapshot.data() ?? <String, dynamic>{};
+    final status = _normalizeStatus((data['status'] ?? '').toString());
+
+    if (!allowed.contains(status)) {
+      throw StateError(
+        '$actionLabel is not allowed when status is $status.',
+      );
+    }
+  }
+
+  Future<void> _ensureFieldStaffAssigned(String complaintId) async {
+    final snapshot = await _complaints.doc(complaintId).get();
+    if (!snapshot.exists) return;
+
+    final data = snapshot.data() ?? <String, dynamic>{};
+    final assignedTo = _normalizeStatus((data['assignedTo'] ?? '').toString());
+
+    if (assignedTo.isEmpty ||
+        assignedTo == 'pending' ||
+        assignedTo == 'unassigned') {
+      throw StateError('Assign field staff before marking in progress.');
+    }
   }
 
   Future<void> _ensureModuleDefaults(String complaintId) async {
@@ -96,7 +186,7 @@ class ComplaintService {
       final updates = <String, dynamic>{};
 
       if (data['ward'] == null) updates['ward'] = 'Unknown';
-      if (data['assignedTo'] == null) updates['assignedTo'] = 'Pending';
+      if (data['assignedTo'] == null) updates['assignedTo'] = 'Unassigned';
       if (data['assignedRole'] == null) updates['assignedRole'] = 'Pending';
       if (data['resolutionNote'] == null) updates['resolutionNote'] = 'Not Added';
       if (data['proofImage'] == null) {

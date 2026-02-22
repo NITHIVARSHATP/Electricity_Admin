@@ -36,39 +36,51 @@ class _ResolutionEntryScreenState extends State<ResolutionEntryScreen> {
       appBar: AppBar(title: const Text('Resolution Entry')),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _noteController,
-              maxLines: 4,
-              enabled: !_saving,
-              decoration: const InputDecoration(
-                labelText: 'Resolution Note',
-                hintText: 'Describe the fix done on-site',
-              ),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Resolution Details',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _noteController,
+                  maxLines: 4,
+                  enabled: !_saving,
+                  decoration: const InputDecoration(
+                    labelText: 'Resolution Note',
+                    hintText: 'Describe the fix done on-site',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _proofController,
+                  enabled: !_saving,
+                  decoration: const InputDecoration(
+                    labelText: 'Proof Image URL (Optional)',
+                    hintText: 'https://example.com/proof.jpg',
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _saving ? null : _submitResolution,
+                    child: const Text('Mark Resolved'),
+                  ),
+                ),
+                if (_saving) ...[
+                  const SizedBox(height: 12),
+                  const LinearProgressIndicator(),
+                ],
+              ],
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _proofController,
-              enabled: !_saving,
-              decoration: const InputDecoration(
-                labelText: 'Proof Image URL (Optional)',
-                hintText: 'https://example.com/proof.jpg',
-              ),
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _saving ? null : _submitResolution,
-                child: const Text('Mark Resolved'),
-              ),
-            ),
-            if (_saving) ...[
-              const SizedBox(height: 12),
-              const LinearProgressIndicator(),
-            ],
-          ],
+          ),
         ),
       ),
     );

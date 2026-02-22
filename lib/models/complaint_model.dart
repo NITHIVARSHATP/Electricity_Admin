@@ -66,7 +66,7 @@ class ComplaintModel {
       imageUrl: (data['imageUrl'] ?? '').toString(),
       createdAt: createdAt,
       ward: (data['ward'] ?? 'Unknown').toString(),
-      assignedTo: (data['assignedTo'] ?? 'Pending').toString(),
+        assignedTo: (data['assignedTo'] ?? 'Unassigned').toString(),
       assignedRole: (data['assignedRole'] ?? 'Pending').toString(),
       resolutionNote: (data['resolutionNote'] ?? 'Not Added').toString(),
       proofImage:
