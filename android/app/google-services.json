@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "10495381934",
+    "project_id": "civic-complaint-a8bd5",
+    "storage_bucket": "civic-complaint-a8bd5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:10495381934:android:9e11a6ea523eb9f0eff83f",
+        "android_client_info": {
+          "package_name": "com.example.civic_admin_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-Mn6fsdG1bzrZbPCvlFFvU4BluFWd2hk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:10495381934:android:fd54a4e07cedc9cfeff83f",
+        "android_client_info": {
+          "package_name": "com.example.complaint_system"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-Mn6fsdG1bzrZbPCvlFFvU4BluFWd2hk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:10495381934:android:89d457c29ca625aeeff83f",
+        "android_client_info": {
+          "package_name": "com.example.electricity_admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-Mn6fsdG1bzrZbPCvlFFvU4BluFWd2hk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
