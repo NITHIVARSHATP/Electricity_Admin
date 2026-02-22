@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../models/complaint_model.dart';
@@ -19,6 +20,13 @@ class AeDashboardScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('AE Dashboard'),
+        actions: [
+          IconButton(
+            tooltip: 'Sign Out',
+            onPressed: () => FirebaseAuth.instance.signOut(),
+            icon: const Icon(Icons.logout),
+          ),
+        ],
       ),
       body: StreamBuilder<List<ComplaintModel>>(
         stream: complaintService.streamActiveComplaints(),
