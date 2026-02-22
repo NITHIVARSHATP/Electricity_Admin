@@ -15,14 +15,26 @@ class ComplaintService {
     const activeStatuses = ['Submitted', 'Under Review', 'Reopened'];
 
     return _complaints
-        .where('status', whereIn: activeStatuses)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map(ComplaintModel.fromFirestore)
-              .toList(growable: false),
-        );
+        .map((snapshot) {
+      final complaints = snapshot.docs
+          .map(ComplaintModel.fromFirestore)
+          .where((item) => activeStatuses.contains(item.status))
+          .toList(growable: false);
+
+      final sorted = complaints.toList(growable: false)
+        ..sort((left, right) {
+          final leftTime = left.createdAt;
+          final rightTime = right.createdAt;
+
+          if (leftTime == null && rightTime == null) return 0;
+          if (leftTime == null) return 1;
+          if (rightTime == null) return -1;
+          return rightTime.compareTo(leftTime);
+        });
+
+      return sorted;
+    });
   }
 
   Stream<ComplaintModel?> streamComplaintById(String complaintId) {
