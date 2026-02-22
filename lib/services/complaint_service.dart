@@ -171,10 +171,19 @@ class ComplaintService {
 
     final data = snapshot.data() ?? <String, dynamic>{};
     final assignedTo = _normalizeStatus((data['assignedTo'] ?? '').toString());
+    final assignedRole = _normalizeStatus((data['assignedRole'] ?? '').toString());
+
+    const assignedOfficial = 'sakthi@gmail.com';
+    final isOfficialDefaultOnly =
+        assignedTo == assignedOfficial &&
+        (assignedRole.isEmpty || assignedRole == 'pending');
 
     if (assignedTo.isEmpty ||
         assignedTo == 'pending' ||
-        assignedTo == 'unassigned') {
+        assignedTo == 'unassigned' ||
+        assignedRole.isEmpty ||
+        assignedRole == 'pending' ||
+        isOfficialDefaultOnly) {
       throw StateError('Assign field staff before marking in progress.');
     }
   }
