@@ -171,7 +171,7 @@ class AeDashboardScreen extends StatelessWidget {
       label: Text(_displayStatus(status)),
       visualDensity: VisualDensity.compact,
       backgroundColor: background,
-      labelStyle: const TextStyle(
+      labelStyle: TextStyle(
         color: foreground,
         fontWeight: FontWeight.w600,
       ),
