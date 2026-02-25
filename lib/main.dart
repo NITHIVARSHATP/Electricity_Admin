@@ -1,3 +1,4 @@
+import 'package:complaint_system/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -61,7 +62,7 @@ class _AnimatedLandingState extends State<AnimatedLanding>
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => const AuthWrapper(),
+          builder: (_) => const LoginScreen(),
         ),
       );
     });

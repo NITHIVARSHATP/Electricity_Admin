@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:complaint_system/models/Application.dart' as Application;
+import 'package:complaint_system/models/Application.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';

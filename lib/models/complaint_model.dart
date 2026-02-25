@@ -13,6 +13,7 @@ class Complaint {
   final double? longitude;
   final String userId;
   String assignedTo;
+  double? distance;
 
   Complaint({
     required this.complaintId,
@@ -27,6 +28,7 @@ class Complaint {
     this.longitude,
     required this.userId,
     this.assignedTo = 'sakthi@gmail.com',
+    this.distance,
   });
 
   factory Complaint.fromFirestore(Map<String, dynamic> data) {
@@ -42,7 +44,7 @@ class Complaint {
       latitude: data['latitude']?.toDouble(),
       longitude: data['longitude']?.toDouble(),
       userId: data['userId'] ?? '',
-      assignedTo: data['assignedTo'] ?? 'sakthi@gmail.com', // 👈 fallback
+      assignedTo: data['assignedTo'] ?? 'sakthi@gmail.com',
     );
   }
   factory Complaint.fromWorkerFirestore(

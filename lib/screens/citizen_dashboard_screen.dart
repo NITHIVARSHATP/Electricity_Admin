@@ -2,7 +2,7 @@ import 'package:complaint_system/screens/track_complaint_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:complaint_system/screens/nearby_complaints_screen.dart';
 import 'package:complaint_system/models/complaint_model.dart';
 import 'package:complaint_system/screens/add_complaint_screen.dart';
 import 'package:complaint_system/complaint_card.dart';
@@ -13,15 +13,50 @@ class CitizenDashboardScreen extends StatefulWidget {
   const CitizenDashboardScreen({super.key});
 
   @override
-  State<CitizenDashboardScreen> createState() =>
-      _CitizenDashboardScreenState();
+  State<CitizenDashboardScreen> createState() => _CitizenDashboardScreenState();
 }
 
 class _CitizenDashboardScreenState extends State<CitizenDashboardScreen> {
+  // Current user from Firebase Auth
   final User? currentUser = FirebaseAuth.instance.currentUser;
+
+  // Variables to hold Firestore data
+  String? userName;
+  bool _isLoadingName = true;
 
   static const primaryPurple = Color(0xFF5B2D91);
   static const bgColor = Color(0xFFF6F7FB);
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  /// Fetches the user's name from the 'Users' collection in Firestore
+  Future<void> _fetchUserData() async {
+    if (currentUser == null) return;
+
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('Users') // Ensure this matches your Firestore collection name exactly
+          .doc(currentUser!.uid)
+          .get();
+
+      if (userDoc.exists && mounted) {
+        setState(() {
+          // Assuming your Firestore field is called 'name'
+          userName = userDoc.data()?['name'] ?? currentUser?.displayName ?? "Citizen";
+          _isLoadingName = false;
+        });
+      } else {
+        if (mounted) setState(() => _isLoadingName = false);
+      }
+    } catch (e) {
+      debugPrint("Error fetching user data: $e");
+      if (mounted) setState(() => _isLoadingName = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,19 +74,13 @@ class _CitizenDashboardScreenState extends State<CitizenDashboardScreen> {
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
               if (value == 'profile') {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const ProfileScreen()));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
               } else if (value == 'track') {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const TrackComplaintScreen()));
-              }  else if (value == 'help') {
-                showDialog(
-                  context: context,
-                  builder: (_) => const AlertDialog(
-                    title: Text('Help'),
-                    content: Text('Contact support for assistance.'),
-                  ),
-                );
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const TrackComplaintScreen()));
+              } else if (value == 'find') {
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const NearbyComplaintsScreen()));
+              } else if (value == 'help') {
+                _showHelpDialog();
               }
             },
             itemBuilder: (context) => [
@@ -88,8 +117,7 @@ class _CitizenDashboardScreenState extends State<CitizenDashboardScreen> {
       // ================= FAB =================
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          Navigator.push(context,
-              MaterialPageRoute(builder: (_) => const AddComplaintScreen()));
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const AddComplaintScreen()));
         },
         backgroundColor: const Color(0xFF0D47A1),
         icon: const Icon(Icons.add),
@@ -115,10 +143,11 @@ class _CitizenDashboardScreenState extends State<CitizenDashboardScreen> {
             style: TextStyle(color: Colors.white.withOpacity(0.8)),
           ),
           const SizedBox(height: 4),
-          Text(
-            currentUser?.email ?? "",
-            style: const TextStyle(
-                color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          _isLoadingName
+              ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              : Text(
+            userName ?? "Citizen",
+            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 14),
           const Text(
@@ -143,6 +172,11 @@ class _CitizenDashboardScreenState extends State<CitizenDashboardScreen> {
           return const Center(child: CircularProgressIndicator());
         }
 
+        if (snapshot.hasError) {
+          debugPrint(snapshot.error.toString());
+          return const Center(child: Text("Error loading complaints. Check Firestore Indexes."));
+        }
+
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const Center(
             child: Column(
@@ -150,11 +184,8 @@ class _CitizenDashboardScreenState extends State<CitizenDashboardScreen> {
               children: [
                 Icon(Icons.inbox_outlined, size: 80, color: Colors.grey),
                 SizedBox(height: 12),
-                Text("No complaints yet",
-                    style:
-                    TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                Text("Tap + to submit a complaint",
-                    style: TextStyle(color: Colors.grey)),
+                Text("No complaints yet", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                Text("Tap + to submit a complaint", style: TextStyle(color: Colors.grey)),
               ],
             ),
           );
@@ -175,7 +206,7 @@ class _CitizenDashboardScreenState extends State<CitizenDashboardScreen> {
     );
   }
 
-  // ================= MENU ITEM =================
+  // ================= HELPERS =================
   PopupMenuItem<String> _menuItem(IconData icon, String text, String value) {
     return PopupMenuItem(
       value: value,
@@ -185,6 +216,16 @@ class _CitizenDashboardScreenState extends State<CitizenDashboardScreen> {
           const SizedBox(width: 10),
           Text(text),
         ],
+      ),
+    );
+  }
+
+  void _showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => const AlertDialog(
+        title: Text('Help'),
+        content: Text('Contact support for assistance at support@complaintsystem.com'),
       ),
     );
   }
