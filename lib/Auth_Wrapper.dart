@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'screens/citizen_dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/official_dashboard_screen.dart';
+import 'admin/admin_screen.dart';
+
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
@@ -21,7 +23,7 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.hasData && snapshot.data != null) {
           return FutureBuilder<DocumentSnapshot>(
             future: FirebaseFirestore.instance
-                .collection('users') // Assumes your roles are in a 'users' collection
+                .collection('Users')
                 .doc(snapshot.data!.uid)
                 .get(),
             builder: (context, roleSnapshot) {
@@ -33,11 +35,16 @@ class AuthWrapper extends StatelessWidget {
                 // Extract the role field from Firestore
                 final data = roleSnapshot.data!.data() as Map<String, dynamic>;
                 String role = data['role'] ?? 'CITIZEN'; // Default to citizen if null
-
+                print(role);
                 if (role == 'OFFICIAL') {
                   return const OfficialDashboardScreen();
-                } else {
+                } else  if(role == 'CITIZEN') {
                   return const CitizenDashboardScreen();
+                }else if(role == 'ADMIN'){
+                  return const AdminDashboardScreen();
+                }
+                else {
+                  return const LoginScreen();
                 }
               }
 

@@ -6,6 +6,7 @@ import 'package:complaint_system/screens/citizen_dashboard_screen.dart';
 import 'package:complaint_system/screens/official_dashboard_screen.dart';
 import 'package:complaint_system/screens/register_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../admin/admin_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -62,6 +63,11 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => const OfficialDashboardScreen()),
+          );
+        }else if (role == "ADMIN") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(

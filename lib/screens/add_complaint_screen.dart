@@ -10,7 +10,7 @@ import 'package:complaint_system/models/complaint_model.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:complaint_system/models/Application.dart';
 import 'package:complaint_system/services/email_service.dart';
-import '../models/Application.dart' as Application;
+import '../models/Application.dart' ;
 //import 'package:firebase_storage/firebase_storage.dart'; // Add this for images
 
 

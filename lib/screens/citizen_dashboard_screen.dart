@@ -30,7 +30,6 @@ class _CitizenDashboardScreenState extends State<CitizenDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
   }
 
   /// Fetches the user's name from the 'Users' collection in Firestore
@@ -142,12 +141,20 @@ class _CitizenDashboardScreenState extends State<CitizenDashboardScreen> {
             "Welcome",
             style: TextStyle(color: Colors.white.withOpacity(0.8)),
           ),
-          const SizedBox(height: 4),
-          _isLoadingName
-              ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : Text(
-            userName ?? "Citizen",
-            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          const SizedBox(height: 6),
+  StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance.collection('Users').doc(currentUser?.uid).snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                var data = snapshot.data!.data() as Map<String, dynamic>?;
+                String name = (data?['name'] ?? "Citizen").toString().toUpperCase();
+                return Text(
+                  name,
+                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                );
+              }
+              return const Text("Loading...");
+            },
           ),
           const SizedBox(height: 14),
           const Text(

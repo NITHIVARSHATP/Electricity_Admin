@@ -62,7 +62,7 @@ class _AnimatedLandingState extends State<AnimatedLanding>
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => const LoginScreen(),
+          builder: (_) => const AuthWrapper(),
         ),
       );
     });

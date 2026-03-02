@@ -14,9 +14,7 @@ import 'package:complaint_system/services/user_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:complaint_system/models/Application.dart';
 import 'package:complaint_system/services/email_service.dart';
-import '../models/Application.dart' as Application;
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -187,7 +185,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         debugPrint("Background location fetch failed, using previous or null");
       }
 
-      // Add these to the .set() call inside registerUser:
+
       await FirebaseFirestore.instance.collection('Users').doc(uid).set({
         'name': name,
         'email': email,
@@ -204,7 +202,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      // ✅ SEND WELCOME EMAIL AFTER SUCCESSFUL REGISTRATION
+
 
       final emailService = EmailService();
 
